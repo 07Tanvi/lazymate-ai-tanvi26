@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LazyMate AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#101322;color:#f7f7ff;min-height:100vh;display:grid;place-items:center;padding:24px}
+main{width:100%;max-width:700px;background:#1b2035;padding:30px;border-radius:22px;border:1px solid #343b59}
+h1{font-size:38px;margin:0 0 10px}
+p{color:#c5c9df;line-height:1.6}
+.tag{color:#a8f0d1;font-weight:bold}
+label{display:block;margin:20px 0 8px;font-weight:bold}
+textarea,select{width:100%;padding:13px;border-radius:10px;border:1px solid #454d70;background:#101629;color:white;font-size:16px}
+textarea{min-height:110px;resize:vertical}
+button{margin-top:18px;width:100%;padding:14px;border:0;border-radius:10px;background:#a8f0d1;color:#101322;font-size:16px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.6}
+#result{margin-top:24px;padding:18px;background:#11182a;border-radius:12px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+footer{font-size:13px;color:#aeb4d0;margin-top:18px}
+</style>
+</head>
+<body>
+<main>
+  <div class="tag">LESS STRESS • MORE REST</div>
+  <h1>LazyMate AI ✨</h1>
+  <p>Got a boring task? Let your local AI turn it into simple steps, a quick checklist, and a smarter way to finish it.</p>
+
+  <label for="task">What task are you putting off?</label>
+  <textarea id="task" placeholder="Example: Organize my study notes, clean my desk, plan weekly meals..."></textarea>
+
+  <label for="time">How much time do you have?</label>
+  <select id="time">
+    <option>5 minutes</option>
+    <option>15 minutes</option>
+    <option>30 minutes</option>
+    <option>1 hour</option>
+  </select>
+
+  <button id="go" onclick="simplifyTask()">Make it easy ✨</button>
+  <div id="result">Your stress-free plan will appear here.</div>
+  <footer>Powered by Qwen 2.5 running locally with Ollama. Your task is processed on your own computer.</footer>
+</main>
+
+<script>
+async function simplifyTask(){
+  const task=document.getElementById("task").value.trim();
+  const time=document.getElementById("time").value;
+  const result=document.getElementById("result");
+  const button=document.getElementById("go");
+
+  if(!task){
+    result.textContent="Please enter a task first 😊";
+    return;
+  }
+
+  button.disabled=true;
+  button.textContent="Making your task easier...";
+  result.textContent="Your local AI is thinking. Please wait...";
+
+  try{
+    const response=await fetch("http://localhost:11434/api/generate",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"qwen2.5:1.5b",
+        stream:false,
+        prompt:`You are LazyMate, a friendly productivity assistant. Help make this task easy and low-stress.
+Task: ${task}
+Available time: ${time}
+Give:
+1. A simple 3-5 step plan.
+2. A short checkbox-style checklist using [ ].
+3. One clever shortcut.
+4. One encouraging sentence.
+Keep it practical and concise.`
+      })
+    });
+
+    if(!response.ok) throw new Error("Ollama returned an error: "+response.status);
+    const data=await response.json();
+    result.textContent=data.response || "No response received. Please try again.";
+  }catch(error){
+    result.textContent="Couldn't connect to Ollama.\n\nCheck that Ollama is running, then try again.\nError: "+error.message;
+  }finally{
+    button.disabled=false;
+    button.textContent="Make it easy ✨";
+  }
+}
+</script>
+</body>
+</html>
